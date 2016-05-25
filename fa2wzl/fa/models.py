@@ -5,6 +5,10 @@ def _folder_loader(folder):
     folder._session._load_folders()
 
 
+def _submission_loader(submission):
+    submission._session._load_submission(submission.id)
+
+
 class Folder(object):
     """Represents a submission folder.
 
@@ -18,7 +22,7 @@ class Folder(object):
     id = None
     title = MappedAttribute(_folder_loader)
     children = MappedAttribute(_folder_loader)
-    submissions = MappedAttribute(_folder_loader)
+    submissions = MappedAttribute(None)
 
     def __repr__(self):
         return "<Folder #%r: %r>" % (self.id, self.title)
@@ -37,14 +41,14 @@ class Submission(object):
         media_url (str): URL to the media
     """
     id = None
-    title = MappedAttribute(None)
-    rating = MappedAttribute(None)
-    description = MappedAttribute(None)
+    title = MappedAttribute(_submission_loader)
+    rating = MappedAttribute(_submission_loader)
+    description = MappedAttribute(_submission_loader)
 
-    tags = MappedAttribute(None)
+    tags = MappedAttribute(_submission_loader)
 
     thumbnail_url = MappedAttribute(None)
-    media_url = MappedAttribute(None)
+    media_url = MappedAttribute(_submission_loader)
 
     def __repr__(self):
         return "<Submission #%r: %r>" % (self.id, self.title)

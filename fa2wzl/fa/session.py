@@ -284,3 +284,46 @@ class FASession(object):
         url = constants.FA_ROOT + "/scraps/%s/%%d/" % self.username
         submissions = self._scan_submission_page(url)
         return submissions
+
+    def _load_submission(self, id):
+        url = constants.FA_ROOT + "/view/%d/" % id
+        doc = self._limited_call(self._html_get, url)
+
+        sub = self._submissions.get(id)
+        if sub is None:
+            sub = Submission()
+            sub._session = self
+            sub.id = id
+            self._submissions[id] = sub
+
+        try:
+            sub.title = doc.cssselect("#submissionImg")[0].get("alt")
+            for el in doc.cssselect(".submission.button a"):
+                if str(el.text_content()) == "Download":
+                    sub.media_url = "https:" + el.get("href")
+
+            rating_classes = doc.cssselect(".rating-box")[0].classes
+            if "adult" in rating_classes:
+                sub.rating = "adult"
+            elif "mature" in rating_classes:
+                sub.rating = "mature"
+            elif "general" in rating_classes:
+                sub.rating = "general"
+            else:
+                raise exceptions.ScraperError()
+
+            sub.description = str(doc.cssselect(".p20")[0].text_content())
+            sub.tags = []
+
+            for el in doc.cssselect(".tags-row .tags a"):
+                tag_name = str(el.text_content())
+                sub.tags.append(tag_name)
+
+            # date_str = str(
+            #     doc.cssselect("#submission_page .popup-date")[0].get("title"))
+            #
+            # parsed_date = datetime.datetime.strptime(date_str, "%b %-d")
+
+            return sub
+        except (IndexError, ValueError):
+            raise exceptions.ScraperError()
