@@ -21,6 +21,9 @@ class WZLSession(object):
 
         self._username = None
 
+        self._root_folders = None
+        self._gallery_submissions = None
+
     @property
     def username(self):
         if self._username is None:
@@ -31,6 +34,8 @@ class WZLSession(object):
 
     def _load_folders(self):
         logger.debug("Loading folders")
+
+        self._root_folders = []
 
         url = constants.WZL_ROOT + "/api/users/%s/view" % self.username
         res = self._requests.get(url)
@@ -46,6 +51,8 @@ class WZLSession(object):
 
             folder.title = folder_struct["title"]
             folder.children = []
+
+            self._root_folders.append(folder)
 
             for subfolder_struct in folder_struct["subfolders"]:
                 subfolder = self._folders.get(subfolder_struct["folder_id"])
@@ -108,4 +115,28 @@ class WZLSession(object):
 
             logger.debug("Found %d submissions" % len(data["submissions"]))
 
+        if folder_id is None:
+            self._gallery_submissions = submissions
+
         return submissions
+
+    def reload_folders(self):
+        """Reload the root folders.
+
+        Use after creating new folders.
+        """
+        self._root_folders = None
+
+    @property
+    def folders(self):
+        if self._root_folders is None:
+            self._load_folders()
+
+        return list(self._root_folders)
+
+    @property
+    def gallery(self):
+        if self._gallery_submissions is None:
+            self._scan_gallery()
+
+        return list(self._gallery_submissions)
