@@ -1,15 +1,19 @@
 import difflib
 
 
-def match_submissions(subjects, possible_matches):
-    """Get pairs of submissions that are probably the same submission.
+def match_objects(subjects, subj_key, possible_matches, match_key):
+    """Get pairs of objects that are probably the same.
 
     Args:
-        subjects: The list of submissions to match
-        possible_matches: The list of submissions to match from
+        subjects: The list of things to match
+        subj_key: Callable that returns the item to compare with for each
+            subject
+        possible_matches: The list of things to match from
+        match_key: Callable that returns the item to compare with for each
+            possible match
 
     Yields:
-        Pairs of submissions from subjects and possible_matches
+        Pairs of objects from subjects and possible_matches
     """
     if len(subjects) == 0 or len(possible_matches) == 0:
         return
@@ -20,8 +24,8 @@ def match_submissions(subjects, possible_matches):
         scores = []
 
         for match in possible_matches:
-            ratio = difflib.SequenceMatcher(a=subject.title,
-                                            b=match.title).ratio()
+            ratio = difflib.SequenceMatcher(a=subj_key(subject),
+                                            b=match_key(match)).ratio()
             scores.append((match, ratio))
 
         scores.sort(key=lambda x: x[1], reverse=True)
