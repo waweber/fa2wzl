@@ -37,3 +37,64 @@ def match_objects(subjects, subj_key, possible_matches, match_key):
 
     for match, (subject, score) in equivs.items():
         yield subject, match
+
+
+def convert_submission_category(cat_str):
+    """Return a Weasyl subcategory ID for a given string category name.
+
+    Args:
+        cat_str (str): The category name
+
+    Returns:
+        int: The integer category ID
+
+    Raises:
+        KeyError: If there is no appropriate mapping
+    """
+    mapping = {
+        "Artwork (Digital)": 1030,
+        "Artwork (Traditional)": 1020,
+        "Cellshading": 1030,
+        "Crafting": 1075,
+        "Designs": 1060,
+        "Flash": 1040,
+        "Fursuiting": 1050,
+        "Icons": 1999,
+        "Mosaics": 1999,
+        "Photography": 1050,
+        "Sculpting": 1070,
+
+        "Story": 2010,
+        "Poetry": 2020,
+        "Prose": 2999,
+
+        "Music": 3999,
+        "Podcasts": 3040,
+
+        "Desktops": 1080,
+        "Wallpaper": 1080,
+        "Screenshots": 1999,
+    }
+
+    return mapping[cat_str]
+
+
+def convert_rating(rating_str):
+    """Convert a FA rating string to a Weasyl rating.
+
+    Args:
+        rating_str (str): The rating name
+
+    Returns:
+        int: The rating value
+
+    Raises:
+        KeyError: If no appropriate rating is found
+    """
+    mapping = {
+        "general": 10,
+        "mature": 30,
+        "adult": 40,
+    }
+
+    return mapping[rating_str]
