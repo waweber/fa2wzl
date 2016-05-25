@@ -1,7 +1,8 @@
 import requests
 
 from fa2wzl import constants
-from fa2wzl.wzl.models import Folder
+from fa2wzl.logging import logger
+from fa2wzl.wzl.models import Folder, Submission
 
 
 class WZLSession(object):
@@ -29,6 +30,8 @@ class WZLSession(object):
         return self._username
 
     def _load_folders(self):
+        logger.debug("Loading folders")
+
         url = constants.WZL_ROOT + "/api/users/%s/view" % self.username
         res = self._requests.get(url)
         folders = res.json()["folders"]
@@ -56,3 +59,53 @@ class WZLSession(object):
                 subfolder.children = []
 
                 folder.children.append(subfolder)
+
+    def _load_submission_from_struct(self, sub_struct):
+        id = sub_struct["submitid"]
+
+        sub = self._submissions.get(id)
+        if sub is None:
+            sub = Submission()
+            sub._session = self
+            sub.id = id
+            self._submissions[id] = sub
+
+        sub.title = sub_struct["title"]
+        sub.thumbnail_url = sub_struct["media"]["thumbnail"][0]["url"]
+
+        return sub
+
+    def _scan_gallery(self, folder_id=None):
+
+        next_id = None
+        url = constants.WZL_ROOT + "/api/users/%s/gallery" % self.username
+
+        submissions = []
+
+        logger.debug("Scanning gallery folder %r" % folder_id)
+
+        while True:
+            params = {}
+
+            if next_id is not None:
+                params["nextid"] = next_id
+
+            if folder_id is not None:
+                params["folderid"] = folder_id
+
+            res = self._requests.get(url, params=params)
+            data = res.json()
+
+            next_id = data["nextid"]
+
+            for sub_struct in data["submissions"]:
+                sub = self._load_submission_from_struct(sub_struct)
+
+                submissions.append(sub)
+
+            if next_id is None:
+                break
+
+            logger.debug("Found %d submissions" % len(data["submissions"]))
+
+        return submissions
