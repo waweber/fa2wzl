@@ -31,7 +31,9 @@ def match_objects(subjects, subj_key, possible_matches, match_key):
         scores.sort(key=lambda x: x[1], reverse=True)
 
         best_match, best_score = scores[0]
-        equivs[best_match] = subject, best_score
+
+        if best_score >= 0.7:
+            equivs[best_match] = subject, best_score
 
     for match, (subject, score) in equivs.items():
         yield subject, match
