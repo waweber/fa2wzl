@@ -172,7 +172,7 @@ class FASession(object):
                 title = str(folder_el.cssselect(".folder-name strong")[
                                 0].text_content())
                 id_match = re.search("folder-([0-9]+)", folder_el.get("class"))
-                group_match = re.search("group-([0-9]+)", group_el.get("class"))
+                group_match = re.search("group-([0-9]+)", folder_el.get("class"))
 
                 id = int(id_match.group(1))
                 parent_id = int(group_match.group(1))

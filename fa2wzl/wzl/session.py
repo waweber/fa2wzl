@@ -151,6 +151,8 @@ class WZLSession(object):
             "parentid": parent_id,
         }
 
+        logger.info("Creating folder \"%s\" (Parent %r)" % (title, parent_id))
+
         self._requests.post(url, data=data)
 
     def create_submission(self, file_name, file_obj, title, type, rating,
@@ -173,5 +175,7 @@ class WZLSession(object):
             "content": description,
             "tags": " ".join(tags),
         }
+
+        logger.info("Uploading file %s as \"%s\"" % (file_name, title))
 
         self._requests.post(url, files=files, data=data)

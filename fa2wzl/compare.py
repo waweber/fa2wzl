@@ -1,5 +1,7 @@
 import difflib
 
+from fa2wzl.logging import logger
+
 
 def match_objects(subjects, subj_key, possible_matches, match_key):
     """Get pairs of objects that are probably the same.
@@ -98,3 +100,46 @@ def convert_rating(rating_str):
     }
 
     return mapping[rating_str]
+
+
+def compute_folder_tasks(fa_folders, wzl_folders):
+    matches = list(match_objects(fa_folders, lambda x: x.title, wzl_folders,
+                                 lambda x: x.title))
+    unmatched_fa_folders = set(fa_folders) - {m[0] for m in matches}
+
+    return set(unmatched_fa_folders)
+
+
+def create_wzl_folders(fa_sess, wzl_sess, new_folders):
+    # Create root folders first
+    logger.debug("Creating root folders")
+    for folder in fa_sess.folders:
+        if folder in new_folders:
+            wzl_sess.create_folder(folder.title)
+
+    # Reload
+    wzl_sess.reload_folders()
+    wzl_sess._load_folders()
+
+    # Create child folders
+    logger.debug("Creating child folders")
+    for folder in fa_sess.folders:
+        for subfolder in folder.children:
+            if subfolder in new_folders:
+
+                # Find created folder by title
+                # TODO: kind of hacky, try to determine the new folder id when
+                # creating it instead and work off of that
+
+                parent_id = 0
+
+                for wzl_parent_folder in wzl_sess._folders.values():
+                    if wzl_parent_folder.title == folder.title:
+                        parent_id = wzl_parent_folder.id
+                        break
+
+                wzl_sess.create_folder(subfolder.title, parent_id)
+
+    # Reload once more
+    wzl_sess.reload_folders()
+    wzl_sess._load_folders()
