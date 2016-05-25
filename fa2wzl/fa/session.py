@@ -8,7 +8,7 @@ import time
 from lxml import html
 
 from fa2wzl import constants, exceptions
-from fa2wzl.fa.models import Folder
+from fa2wzl.fa.models import Folder, Submission
 from fa2wzl.logging import logger
 
 
@@ -204,3 +204,83 @@ class FASession(object):
             self._load_folders()
 
         return dict(self._folders)
+
+    def _scan_submission_page(self, url_format):
+        """Return submissions found in pages of a base url.
+
+        Args:
+            url_format (str): URL, with a %d that holds the page id
+
+        Returns:
+            A list of submission objects.
+        """
+
+        submissions = []
+
+        try:
+            page = 1
+            while True:
+                url = url_format % page
+                doc = self._limited_call(self._html_get, url)
+                logger.debug("Scanning submissions from %s" % url)
+
+                count = 0
+
+                for el in doc.cssselect(".gallery > *"):
+                    if el.get("id") == "no-images":
+                        continue
+
+                    id_str = el.get("id")[4:]
+                    if id_str == "":
+                        continue
+
+                    id = int(id_str)
+
+                    submission = self._submissions.get(id)
+                    if submission is None:
+                        submission = Submission()
+                        submission._session = self
+                        submission.id = id
+                        self._submissions[id] = submission
+
+                    submission.title = str(
+                        el.cssselect("span")[0].text_content())
+
+                    if "r-adult" in el.classes:
+                        submission.rating = "adult"
+                    elif "r-mature" in el.classes:
+                        submission.rating = "mature"
+                    elif "r-general" in el.classes:
+                        submission.rating = "general"
+                    else:
+                        raise exceptions.ScraperError()
+
+                    submission.thumbnail_url = "https:" + el.cssselect("img")[
+                        0].get("src")
+
+                    submissions.append(submission)
+                    count += 1
+
+                if count == 0:
+                    break
+
+                logger.debug("Found %d submissions" % count)
+
+                page += 1
+
+        except (IndexError, ValueError):
+            raise exceptions.ScraperError()
+
+        return submissions
+
+    def _scan_gallery(self):
+        logger.debug("Scanning gallery")
+        url = constants.FA_ROOT + "/gallery/%s/%%d/" % self.username
+        submissions = self._scan_submission_page(url)
+        return submissions
+
+    def _scan_scraps(self):
+        logger.debug("Scanning scraps")
+        url = constants.FA_ROOT + "/scraps/%s/%%d/" % self.username
+        submissions = self._scan_submission_page(url)
+        return submissions
