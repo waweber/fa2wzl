@@ -128,6 +128,7 @@ class WZLSession(object):
         Use after creating new folders.
         """
         self._root_folders = None
+        self._load_folders()
 
     @property
     def folders(self):

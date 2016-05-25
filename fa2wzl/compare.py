@@ -119,7 +119,6 @@ def create_wzl_folders(fa_sess, wzl_sess, new_folders):
 
     # Reload
     wzl_sess.reload_folders()
-    wzl_sess._load_folders()
 
     # Create child folders
     logger.debug("Creating child folders")
@@ -142,4 +141,3 @@ def create_wzl_folders(fa_sess, wzl_sess, new_folders):
 
     # Reload once more
     wzl_sess.reload_folders()
-    wzl_sess._load_folders()
