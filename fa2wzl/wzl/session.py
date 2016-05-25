@@ -1,6 +1,7 @@
 import requests
+from lxml import html
 
-from fa2wzl import constants
+from fa2wzl import constants, exceptions
 from fa2wzl.logging import logger
 from fa2wzl.wzl.models import Folder, Submission
 
@@ -54,18 +55,19 @@ class WZLSession(object):
 
             self._root_folders.append(folder)
 
-            for subfolder_struct in folder_struct["subfolders"]:
-                subfolder = self._folders.get(subfolder_struct["folder_id"])
-                if subfolder is None:
-                    subfolder = Folder()
-                    subfolder._session = self
-                    subfolder.id = subfolder_struct["folder_id"]
-                    self._folders[subfolder.id] = subfolder
+            if "subfolders" in folder_struct:
+                for subfolder_struct in folder_struct["subfolders"]:
+                    subfolder = self._folders.get(subfolder_struct["folder_id"])
+                    if subfolder is None:
+                        subfolder = Folder()
+                        subfolder._session = self
+                        subfolder.id = subfolder_struct["folder_id"]
+                        self._folders[subfolder.id] = subfolder
 
-                subfolder.title = subfolder_struct["title"]
-                subfolder.children = []
+                    subfolder.title = subfolder_struct["title"]
+                    subfolder.children = []
 
-                folder.children.append(subfolder)
+                    folder.children.append(subfolder)
 
     def _load_submission_from_struct(self, sub_struct):
         id = sub_struct["submitid"]
@@ -140,3 +142,13 @@ class WZLSession(object):
             self._scan_gallery()
 
         return list(self._gallery_submissions)
+
+    def create_folder(self, title, parent_id=None):
+        url = constants.WZL_ROOT + "/control/createfolder"
+
+        data = {
+            "title": title,
+            "parentid": parent_id,
+        }
+
+        self._requests.post(url, data=data)
