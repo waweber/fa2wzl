@@ -103,6 +103,17 @@ def convert_rating(rating_str):
 
 
 def map_folders(fa_folders, wzl_folders):
+    """Create a mapping of folders on FA to equivalent ones on Weasyl.
+
+    The folder should be the root folders.
+
+    Args:
+        fa_folders: List of FA folders
+        wzl_folders: List of WZL folders
+
+    Returns:
+        list: A list of pairs of a FA folder and a matched WZL folder.
+    """
     mapped = match_objects(wzl_folders, lambda x: x.title, fa_folders,
                            lambda x: x.title)
 
@@ -118,6 +129,17 @@ def map_folders(fa_folders, wzl_folders):
 
 
 def get_unmapped_folders(fa_folders, mapping):
+    """Return the FA folders that have not been matched to a WZL folder.
+
+    The folders should be the root folders.
+
+    Args:
+        fa_folders: List of FA folders
+        mapping: The list of mappings
+
+    Returns:
+        set: A set of the folders not found in the mapping
+    """
     unmapped_folders = set()
 
     for folder in fa_folders:
@@ -132,6 +154,13 @@ def get_unmapped_folders(fa_folders, mapping):
 
 
 def create_unmapped_folders(fa_sess, wzl_sess, mapping):
+    """Creates folders that aren't found in a mapping, on Weasyl.
+
+    Args:
+        fa_sess: The FA session
+        wzl_sess: The Weasyl session
+        mapping: The mapping list
+    """
     unmapped_folders = get_unmapped_folders(fa_sess.folders, mapping)
 
     mapping_dict = {fa_folder: wzl_folder for fa_folder, wzl_folder in mapping}
