@@ -322,6 +322,13 @@ class FASession(object):
                 tag_name = str(el.text_content())
                 sub.tags.append(tag_name)
 
+            cat_text = str(
+                doc.cssselect(".tags-row > *:nth-child(1)")[0].text_content())
+
+            cat_match = re.search("Category:(.*?)>", cat_text, re.S + re.M)
+
+            sub.category = cat_match.group(1).strip()
+
             # date_str = str(
             #     doc.cssselect("#submission_page .popup-date")[0].get("title"))
             #

@@ -39,6 +39,7 @@ class Submission(object):
         id (int): The submission ID
         title (str): The submission title
         rating (str): The content rating
+        category (str): The submission category
         description (str): The description
         tags: A list of tag names
         thumbnail_url (str): URL to the thumbnail
@@ -47,6 +48,7 @@ class Submission(object):
     id = None
     title = MappedAttribute(_submission_loader)
     rating = MappedAttribute(_submission_loader)
+    category = MappedAttribute(_submission_loader)
     description = MappedAttribute(_submission_loader)
 
     tags = MappedAttribute(_submission_loader)
