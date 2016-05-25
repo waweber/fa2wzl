@@ -5,6 +5,10 @@ def _folder_loader(folder):
     folder._session._load_folders()
 
 
+def _folder_content_loader(folder):
+    folder._session._scan_folder(folder)
+
+
 def _submission_loader(submission):
     submission._session._load_submission(submission.id)
 
@@ -22,7 +26,7 @@ class Folder(object):
     id = None
     title = MappedAttribute(_folder_loader)
     children = MappedAttribute(_folder_loader)
-    submissions = MappedAttribute(None)
+    submissions = MappedAttribute(_folder_content_loader)
 
     def __repr__(self):
         return "<Folder #%r: %r>" % (self.id, self.title)

@@ -147,6 +147,7 @@ class FASession(object):
 
                 group.title = title
                 group.children = []
+                group.submissions = []
             except (IndexError, ValueError):
                 raise exceptions.ScraperError()
 
@@ -284,6 +285,18 @@ class FASession(object):
         url = constants.FA_ROOT + "/scraps/%s/%%d/" % self.username
         submissions = self._scan_submission_page(url)
         return submissions
+
+    def _scan_folder(self, folder):
+        logger.debug("Scanning folder %r" % folder)
+
+        url = constants.FA_ROOT + "/gallery/%s/folder/%d/-/%%d/" % (
+            self.username, folder.id)
+        submissions = self._scan_submission_page(url)
+
+        folder.submissions = []
+
+        for sub in submissions:
+            folder.submissions.append(sub)
 
     def _load_submission(self, id):
         url = constants.FA_ROOT + "/view/%d/" % id
