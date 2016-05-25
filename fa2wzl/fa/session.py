@@ -15,6 +15,12 @@ from fa2wzl.logging import logger
 class FASession(object):
     """A FurAffinity session.
 
+    Attributes:
+        username (str): The username used in this session
+        gallery: List of submission objects in the user's gallery
+        scraps: List of submission objects in the user's scraps
+        folders: List of folders in the user's gallery
+
     """
 
     def __init__(self, username):
@@ -34,6 +40,10 @@ class FASession(object):
 
         self._folders = {}
         self._submissions = {}
+
+        self._gallery = None
+        self._scraps = None
+        self._root_folders = None
 
     def _limited_call(self, func, *args, **kwargs):
         """Rate limit calls to a function.
@@ -127,6 +137,8 @@ class FASession(object):
     def _load_folders(self):
         logger.debug("Loading folders")
 
+        self._root_folders = []
+
         url = constants.FA_ROOT + "/controls/folders/submissions/"
         doc = self._limited_call(self._html_get, url)
 
@@ -148,6 +160,9 @@ class FASession(object):
                 group.title = title
                 group.children = []
                 group.submissions = []
+
+                self._root_folders.append(group)
+
             except (IndexError, ValueError):
                 raise exceptions.ScraperError()
 
@@ -173,38 +188,13 @@ class FASession(object):
                 folder.children = []
 
                 parent = self._folders.get(parent_id)
-                if parent is not None:
+                if parent is None:
+                    self._root_folders.append(folder)
+                else:
                     parent.children.append(folder)
 
             except (IndexError, ValueError):
                 raise exceptions.ScraperError()
-
-    def get_folder(self, id):
-        """Get a folder by ID.
-
-        Args:
-            id (int): The folder ID
-
-        Returns:
-            The folder.
-
-        Raises:
-            KeyError: If the folder does not exist.
-        """
-        if id in self._folders:
-            return self._folders[id]
-
-        self._load_folders()
-        return self._folders[id]
-
-    def get_folders(self):
-        """Get a dict of the user's folders.
-        """
-
-        if len(self._folders) == 0:
-            self._load_folders()
-
-        return dict(self._folders)
 
     def _scan_submission_page(self, url_format):
         """Return submissions found in pages of a base url.
@@ -340,3 +330,23 @@ class FASession(object):
             return sub
         except (IndexError, ValueError):
             raise exceptions.ScraperError()
+
+    @property
+    def gallery(self):
+        if self._gallery is None:
+            self._gallery = self._scan_gallery()
+        return list(self._gallery)
+
+    @property
+    def scraps(self):
+        if self._scraps is None:
+            self._scraps = self._scan_scraps()
+
+        return list(self._scraps)
+
+    @property
+    def folders(self):
+        if self._root_folders is None:
+            self._load_folders()
+
+        return list(self._root_folders)
