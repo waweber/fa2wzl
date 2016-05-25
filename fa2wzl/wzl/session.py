@@ -152,3 +152,26 @@ class WZLSession(object):
         }
 
         self._requests.post(url, data=data)
+
+    def create_submission(self, file_name, file_obj, title, type, rating,
+                          description, tags, folder_id=0):
+
+        # TODO: not just "visual"
+        url = constants.WZL_ROOT + "/submit/visual"
+
+        files = {
+            "submitfile": (file_name, file_obj),
+            "thumbfile": "",
+
+        }
+
+        data = {
+            "title": title,
+            "subtype": type,
+            "folderid": folder_id,
+            "rating": rating,
+            "content": description,
+            "tags": " ".join(tags),
+        }
+
+        self._requests.post(url, files=files, data=data)
