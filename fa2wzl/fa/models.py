@@ -1,6 +1,10 @@
 from fa2wzl.mapping import MappedAttribute
 
 
+def _folder_loader(folder):
+    folder._session._load_folders()
+
+
 class Folder(object):
     """Represents a submission folder.
 
@@ -12,9 +16,12 @@ class Folder(object):
     """
 
     id = None
-    title = MappedAttribute(None)
-    children = MappedAttribute(None)
-    submissions = MappedAttribute(None)
+    title = MappedAttribute(_folder_loader)
+    children = MappedAttribute(_folder_loader)
+    submissions = MappedAttribute(_folder_loader)
+
+    def __repr__(self):
+        return "<Folder #%r: %r>" % (self.id, self.title)
 
 
 class Submission(object):
@@ -38,3 +45,6 @@ class Submission(object):
 
     thumbnail_url = MappedAttribute(None)
     media_url = MappedAttribute(None)
+
+    def __repr__(self):
+        return "<Submission #%r: %r>" % (self.id, self.title)

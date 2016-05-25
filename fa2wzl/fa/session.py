@@ -1,4 +1,5 @@
 import datetime
+import re
 from contextlib import contextmanager
 
 import requests
@@ -7,6 +8,7 @@ import time
 from lxml import html
 
 from fa2wzl import constants, exceptions
+from fa2wzl.fa.models import Folder
 from fa2wzl.logging import logger
 
 
@@ -121,3 +123,84 @@ class FASession(object):
         """
         logger.info("Logging out")
         self._limited_call(self._requests.get, constants.FA_ROOT + "/logout/")
+
+    def _load_folders(self):
+        logger.debug("Loading folders")
+
+        url = constants.FA_ROOT + "/controls/folders/submissions/"
+        doc = self._limited_call(self._html_get, url)
+
+        # get groups
+        for group_el in doc.cssselect(".group-row"):
+            try:
+                title = str(group_el.cssselect("strong")[0].text_content())
+
+                id_match = re.search("group-([0-9]+)", group_el.get("class"))
+                id = int(id_match.group(1))
+
+                group = self._folders.get(id)
+                if group is None:
+                    group = Folder()
+                    group._session = self
+                    group.id = id
+                    self._folders[id] = group
+
+                group.title = title
+                group.children = []
+            except (IndexError, ValueError):
+                raise exceptions.ScraperError()
+
+        # Get folders
+        for folder_el in doc.cssselect(".folder-row"):
+            try:
+                title = str(folder_el.cssselect(".folder-name strong")[
+                                0].text_content())
+                id_match = re.search("folder-([0-9]+)", folder_el.get("class"))
+                group_match = re.search("group-([0-9]+)", group_el.get("class"))
+
+                id = int(id_match.group(1))
+                parent_id = int(group_match.group(1))
+
+                folder = self._folders.get(id)
+                if folder is None:
+                    folder = Folder()
+                    folder._session = self
+                    folder.id = id
+                    self._folders[id] = folder
+
+                folder.title = title
+                folder.children = []
+
+                parent = self._folders.get(parent_id)
+                if parent is not None:
+                    parent.children.append(folder)
+
+            except (IndexError, ValueError):
+                raise exceptions.ScraperError()
+
+    def get_folder(self, id):
+        """Get a folder by ID.
+
+        Args:
+            id (int): The folder ID
+
+        Returns:
+            The folder.
+
+        Raises:
+            KeyError: If the folder does not exist.
+        """
+        if id in self._folders:
+            return self._folders[id]
+
+        self._load_folders()
+        return self._folders[id]
+
+    def get_folders(self):
+        """Get a dict of the user's folders.
+        """
+
+        if len(self._folders) == 0:
+            self._load_folders()
+
+        return dict(self._folders)
