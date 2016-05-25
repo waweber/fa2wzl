@@ -156,6 +156,13 @@ class WZLSession(object):
 
         self._requests.post(url, data=data)
 
+        old_ids = set(self._folders.keys())
+        self.reload_folders()
+        new_ids = set(self._folders.keys())
+
+        new_id = list(new_ids - old_ids)[0]
+        return self._folders[new_id]
+
     def create_submission(self, file_name, file_obj, title, type, rating,
                           description, tags, folder_id=0):
 

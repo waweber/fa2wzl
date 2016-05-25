@@ -115,3 +115,27 @@ def map_folders(fa_folders, wzl_folders):
         mapped.extend(list(sub_mapped))
 
     return [(m[1], m[0]) for m in mapped]
+
+
+def get_unmapped_folders(fa_folders, mapping):
+    unmapped_folders = set()
+
+    for folder in fa_folders:
+        unmapped_folders.add(folder)
+
+        for subfolder in folder.children:
+            unmapped_folders.add(subfolder)
+
+    unmapped_folders -= {fa_folder for fa_folder, wzl_folder in mapping}
+
+    return unmapped_folders
+
+
+def create_unmapped_folders(fa_sess, wzl_sess, unmapped_folders):
+    for folder in fa_sess.folders:
+        if folder in unmapped_folders:
+            new_wzl_folder = wzl_sess.create_folder(folder.title)
+
+            for subfolder in folder.children:
+                if subfolder in unmapped_folders:
+                    wzl_sess.create_folder(subfolder.title, new_wzl_folder.id)
