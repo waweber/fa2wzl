@@ -131,7 +131,11 @@ def get_unmapped_folders(fa_folders, mapping):
     return unmapped_folders
 
 
-def create_unmapped_folders(fa_sess, wzl_sess, unmapped_folders):
+def create_unmapped_folders(fa_sess, wzl_sess, mapping):
+    unmapped_folders = get_unmapped_folders(fa_sess.folders, mapping)
+
+    mapping_dict = {fa_folder: wzl_folder for fa_folder, wzl_folder in mapping}
+
     for folder in fa_sess.folders:
         if folder in unmapped_folders:
             new_wzl_folder = wzl_sess.create_folder(folder.title)
@@ -139,3 +143,9 @@ def create_unmapped_folders(fa_sess, wzl_sess, unmapped_folders):
             for subfolder in folder.children:
                 if subfolder in unmapped_folders:
                     wzl_sess.create_folder(subfolder.title, new_wzl_folder.id)
+
+        else:
+            for subfolder in folder.children:
+                if subfolder in unmapped_folders:
+                    wzl_sess.create_folder(subfolder.title,
+                                           mapping_dict[folder].id)
