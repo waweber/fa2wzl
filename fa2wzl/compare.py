@@ -153,28 +153,33 @@ def get_unmapped_folders(fa_folders, mapping):
     return unmapped_folders
 
 
-def create_unmapped_folders(fa_sess, wzl_sess, mapping):
+def create_unmapped_folders(fa_sess, wzl_sess, mapping, exclude=None):
     """Creates folders that aren't found in a mapping, on Weasyl.
 
     Args:
         fa_sess: The FA session
         wzl_sess: The Weasyl session
         mapping: The mapping list
+        exclude: Optional list of FA folders to exclude
     """
     unmapped_folders = get_unmapped_folders(fa_sess.folders, mapping)
 
     mapping_dict = {fa_folder: wzl_folder for fa_folder, wzl_folder in mapping}
 
     for folder in fa_sess.folders:
-        if folder in unmapped_folders:
+        if folder in unmapped_folders and (
+                        exclude is None or folder not in exclude):
             new_wzl_folder = wzl_sess.create_folder(folder.title)
 
             for subfolder in folder.children:
-                if subfolder in unmapped_folders:
+                if subfolder in unmapped_folders and (
+                                exclude is None or subfolder not in exclude):
                     wzl_sess.create_folder(subfolder.title, new_wzl_folder.id)
 
         else:
             for subfolder in folder.children:
-                if subfolder in unmapped_folders:
+                if subfolder in unmapped_folders and (
+                                exclude is None or subfolder not in exclude) \
+                        and folder in mapping_dict:
                     wzl_sess.create_folder(subfolder.title,
                                            mapping_dict[folder].id)
