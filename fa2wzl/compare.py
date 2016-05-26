@@ -226,6 +226,34 @@ def get_unmapped_submissions(fa_submissions, mapping):
     return subs - mapped
 
 
+def associate_submissions_with_folders(fa_sess, unmapped_submissions,
+                                       folder_mapping):
+    mapping_dict = {fa_folder: wzl_folder for fa_folder, wzl_folder in
+                    folder_mapping}
+
+    for sub in unmapped_submissions:
+
+        # Get the folders the submission is in
+        # TODO: would be easier with a reverse relationship of submissions to
+        # folders as well
+        in_folders = []
+
+        for folder in fa_sess.folders:
+            if sub in folder.submissions:
+                in_folders.append(sub)
+
+            for subfolder in folder.children:
+                if sub in subfolder.submissions:
+                    in_folders.append(sub)
+
+        if len(in_folders) == 0:
+            yield (sub, None)
+        else:
+            # only associate it with the first folder it's in
+            # (weasyl does not support multiple folder membership)
+            yield (sub, mapping_dict[in_folders[0]])
+
+
 def create_unmapped_folders(fa_sess, wzl_sess, mapping, exclude=None):
     """Creates folders that aren't found in a mapping, on Weasyl.
 
