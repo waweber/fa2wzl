@@ -128,6 +128,22 @@ def map_folders(fa_folders, wzl_folders):
     return [(m[1], m[0]) for m in mapped]
 
 
+def map_submissions(fa_submissions, wzl_submissions):
+    """Create a mapping of submissions on FA to equivalent ones on Weasyl.
+
+    Does not consider folders.
+
+    Args:
+        fa_submissions: List of all submissions on FA
+        wzl_submissions: List of all submissions on WZL
+    """
+    mapped = match_objects(wzl_submissions, lambda x: x.title, fa_submissions,
+                           lambda x: x.title)
+    mapped = list(mapped)
+
+    return [(m[1], m[0]) for m in mapped]
+
+
 def get_unmapped_folders(fa_folders, mapping):
     """Return the FA folders that have not been matched to a WZL folder.
 
