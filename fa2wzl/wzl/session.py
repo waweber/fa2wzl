@@ -164,26 +164,68 @@ class WZLSession(object):
         new_id = list(new_ids - old_ids)[0]
         return self._folders[new_id]
 
-    def create_submission(self, file_name, file_obj, title, type, rating,
-                          description, tags, folder_id=0):
+    def create_submission(self, file_name, file_obj, title, type, category,
+                          rating,
+                          description, tags, folder_id=0, thumb_obj=None):
 
         # TODO: not just "visual"
         url = constants.WZL_ROOT + "/submit/visual"
 
-        files = {
-            "submitfile": (file_name, file_obj),
-            "thumbfile": "",
+        if type == "visual":
+            url = constants.WZL_ROOT + "/submit/visual"
+            files = {
+                "submitfile": (file_name, file_obj),
+                "thumbfile": "",
+            }
 
-        }
+            data = {
+                "title": title,
+                "subtype": category,
+                "folderid": folder_id,
+                "rating": rating,
+                "content": description,
+                "tags": " ".join(tags),
+            }
 
-        data = {
-            "title": title,
-            "subtype": type,
-            "folderid": folder_id,
-            "rating": rating,
-            "content": description,
-            "tags": " ".join(tags),
-        }
+        elif type == "literary":
+            url = constants.WZL_ROOT + "/submit/literary"
+            files = {
+                "submitfile": (file_name, file_obj),
+                "coverfile": "",
+            }
+
+            if thumb_obj is not None:
+                files["thumbfile"] = thumb_obj,
+
+            data = {
+                "embedlink": "",
+                "title": title,
+                "subtype": category,
+                "folderid": folder_id,
+                "rating": rating,
+                "content": description,
+                "tags": " ".join(tags),
+            }
+
+        elif type == "multimedia":
+            url = constants.WZL_ROOT + "/submit/multimedia"
+            files = {
+                "submitfile": (file_name, file_obj),
+                "coverfile": "",
+            }
+
+            if thumb_obj is not None:
+                files["thumbfile"] = thumb_obj,
+
+            data = {
+                "embedlink": "",
+                "title": title,
+                "subtype": category,
+                "folderid": folder_id,
+                "rating": rating,
+                "content": description,
+                "tags": " ".join(tags),
+            }
 
         logger.info("Uploading file %s as \"%s\"" % (file_name, title))
 
