@@ -1,4 +1,5 @@
 import difflib
+from itertools import groupby
 
 from fa2wzl.logging import logger
 
@@ -81,6 +82,28 @@ def convert_submission_category(cat_str):
     return mapping[cat_str]
 
 
+def convert_submission_type(type_str):
+    """Convert a FA type string to a WZL type string.
+
+    Args:
+        type_str (str): The FA type string
+
+    Returns:
+        str: The weasyl type string
+
+    Raises:
+        KeyError: If there is no appropriate type.
+    """
+    mapping = {
+        "image": "visual",
+        "text": "literary",
+        "audio": "multimedia",
+        "flash": "multimedia",
+    }
+
+    return mapping[type_str]
+
+
 def convert_rating(rating_str):
     """Convert a FA rating string to a Weasyl rating.
 
@@ -137,11 +160,29 @@ def map_submissions(fa_submissions, wzl_submissions):
         fa_submissions: List of all submissions on FA
         wzl_submissions: List of all submissions on WZL
     """
-    mapped = match_objects(wzl_submissions, lambda x: x.title, fa_submissions,
-                           lambda x: x.title)
-    mapped = list(mapped)
 
-    return [(m[1], m[0]) for m in mapped]
+    fa_visual = [s for s in fa_submissions if
+                 convert_submission_type(s.type) == "visual"]
+    fa_literary = [s for s in fa_submissions if
+                   convert_submission_type(s.type) == "literary"]
+    fa_multimedia = [s for s in fa_submissions if
+                     convert_submission_type(s.type) == "multimedia"]
+
+    wzl_visual = [s for s in wzl_submissions if s.type == "visual"]
+    wzl_literary = [s for s in wzl_submissions if s.type == "literary"]
+    wzl_multimedia = [s for s in wzl_submissions if s.type == "multimedia"]
+
+    mappings = []
+
+    mappings.extend(match_objects(wzl_visual, lambda x: x.title, fa_visual,
+                                  lambda x: x.title))
+    mappings.extend(match_objects(wzl_literary, lambda x: x.title, fa_literary,
+                                  lambda x: x.title))
+    mappings.extend(
+        match_objects(wzl_multimedia, lambda x: x.title, fa_multimedia,
+                      lambda x: x.title))
+
+    return [(m[1], m[0]) for m in mappings]
 
 
 def get_unmapped_folders(fa_folders, mapping):
