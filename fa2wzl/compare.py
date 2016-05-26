@@ -210,6 +210,22 @@ def get_unmapped_folders(fa_folders, mapping):
     return unmapped_folders
 
 
+def get_unmapped_submissions(fa_submissions, mapping):
+    """Return submissions that were not mapped to an existing WZL submission.
+
+    Args:
+        fa_submissions: List of FA submissions
+        mapping: List of mappings
+
+    Returns:
+        set: Set of unmapped submissions
+    """
+    mapped = set(m[0] for m in mapping)
+    subs = set(fa_submissions)
+
+    return subs - mapped
+
+
 def create_unmapped_folders(fa_sess, wzl_sess, mapping, exclude=None):
     """Creates folders that aren't found in a mapping, on Weasyl.
 
