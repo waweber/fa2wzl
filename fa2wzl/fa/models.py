@@ -37,6 +37,7 @@ class Submission(object):
 
     Attributes:
         id (int): The submission ID
+        type (str): The type of submission
         title (str): The submission title
         rating (str): The content rating
         category (str): The submission category
@@ -46,6 +47,7 @@ class Submission(object):
         media_url (str): URL to the media
     """
     id = None
+    type = MappedAttribute(_submission_loader)
     title = MappedAttribute(_submission_loader)
     rating = MappedAttribute(_submission_loader)
     category = MappedAttribute(_submission_loader)

@@ -172,7 +172,8 @@ class FASession(object):
                 title = str(folder_el.cssselect(".folder-name strong")[
                                 0].text_content())
                 id_match = re.search("folder-([0-9]+)", folder_el.get("class"))
-                group_match = re.search("group-([0-9]+)", folder_el.get("class"))
+                group_match = re.search("group-([0-9]+)",
+                                        folder_el.get("class"))
 
                 id = int(id_match.group(1))
                 parent_id = int(group_match.group(1))
@@ -246,6 +247,17 @@ class FASession(object):
                     else:
                         raise exceptions.ScraperError()
 
+                    if "t-image" in el.classes:
+                        submission.type = "image"
+                    elif "t-text" in el.classes:
+                        submission.type = "text"
+                    elif "t-audio" in el.classes:
+                        submission.type = "audio"
+                    elif "t-flash" in el.classes:
+                        submission.type = "flash"
+                    else:
+                        raise exceptions.ScraperError()
+
                     submission.thumbnail_url = "https:" + el.cssselect("img")[
                         0].get("src")
 
@@ -289,6 +301,7 @@ class FASession(object):
             folder.submissions.append(sub)
 
     def _load_submission(self, id):
+        # TODO: can also update containing folder info here
         url = constants.FA_ROOT + "/view/%d/" % id
         doc = self._limited_call(self._html_get, url)
 
