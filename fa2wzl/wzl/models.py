@@ -33,10 +33,14 @@ class Submission(object):
 
     Attributes:
         id (int): The submission ID
+        type (str): The submission type
         title (str): The submission title
         thumbnail_url (str): URL to the thumbnail
     """
     id = None
+
+    # funny that the mapped attribute never gets used
+    type = MappedAttribute(None)
     title = MappedAttribute(None)
     thumbnail_url = MappedAttribute(None)
 

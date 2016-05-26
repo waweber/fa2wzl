@@ -80,6 +80,7 @@ class WZLSession(object):
             self._submissions[id] = sub
 
         sub.title = sub_struct["title"]
+        sub.type = sub_struct["subtype"]
         sub.thumbnail_url = sub_struct["media"]["thumbnail"][0]["url"]
 
         return sub
