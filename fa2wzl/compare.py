@@ -250,15 +250,13 @@ def associate_submissions_with_folders(fa_sess, unmapped_submissions,
 
         for folder in fa_sess.folders:
             if sub in folder.submissions:
-                in_folders.append(sub)
+                in_folders.append(folder)
 
             for subfolder in folder.children:
                 if sub in subfolder.submissions:
-                    in_folders.append(sub)
+                    in_folders.append(subfolder)
 
-        if len(in_folders) == 0:
-            yield (sub, None)
-        else:
+        if len(in_folders) > 0:
             # only associate it with the first folder it's in
             # (weasyl does not support multiple folder membership)
             yield (sub, mapping_dict[in_folders[0]])

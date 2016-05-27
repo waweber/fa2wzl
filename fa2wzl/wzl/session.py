@@ -1,3 +1,5 @@
+import re
+
 import requests
 from lxml import html
 
@@ -179,14 +181,14 @@ class WZLSession(object):
             description (str): A text description
             tags: A list of tag names
             folder_id (int, optional): The parent folder ID
-            thumb_obj: An optional thumbnail file-like object 
+            thumb_obj: An optional thumbnail file-like object
         """
 
         if type == "visual":
             url = constants.WZL_ROOT + "/submit/visual"
             files = {
                 "submitfile": (file_name, file_obj),
-                "thumbfile": "",
+                "thumbfile": ("thumb", b""),
             }
 
             data = {
@@ -202,11 +204,11 @@ class WZLSession(object):
             url = constants.WZL_ROOT + "/submit/literary"
             files = {
                 "submitfile": (file_name, file_obj),
-                "coverfile": "",
+                "coverfile": ("cover", b""),
             }
 
             if thumb_obj is not None:
-                files["thumbfile"] = thumb_obj,
+                files["thumbfile"] = ("thumb", thumb_obj)
 
             data = {
                 "embedlink": "",
@@ -222,11 +224,11 @@ class WZLSession(object):
             url = constants.WZL_ROOT + "/submit/multimedia"
             files = {
                 "submitfile": (file_name, file_obj),
-                "coverfile": "",
+                "coverfile": ("cover", b""),
             }
 
             if thumb_obj is not None:
-                files["thumbfile"] = thumb_obj,
+                files["thumbfile"] = ("thumb", thumb_obj)
 
             data = {
                 "embedlink": "",
@@ -240,4 +242,17 @@ class WZLSession(object):
 
         logger.info("Uploading file %s as \"%s\"" % (file_name, title))
 
-        self._requests.post(url, files=files, data=data)
+        res = self._requests.post(url, files=files, data=data)
+
+        # Workaround for literary submissions
+
+        if type == "literary":
+            data = {
+                "submitid": 0,
+                "x1": 0,
+                "y1": 0,
+                "x2": 0,
+                "y2": 0,
+            }
+
+            self._requests.post(res.url, data=data)

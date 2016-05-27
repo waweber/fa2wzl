@@ -19,7 +19,7 @@ class Worker(object):
         # Download the file
         # TODO: use a non protected attribute
         res = self.fa_sess._requests.get(sub.media_url)
-        file = io.BytesIO(res.content)
+        file = res.content
 
         # TODO: not exactly the right way
         file_name_info = sub.media_url.split("/")
@@ -28,7 +28,12 @@ class Worker(object):
 
         title = sub.title
         type = compare.convert_submission_type(sub.type)
-        category = compare.convert_submission_category(sub.category)
+
+        try:
+            category = compare.convert_submission_category(sub.category)
+        except KeyError:
+            category = ""
+
         rating = compare.convert_rating(sub.rating)
         description = sub.description
         tags = sub.tags
@@ -41,7 +46,7 @@ class Worker(object):
         if type != "visual":
             # Use custom thumbnail
             res = self.fa_sess._requests.get(sub.thumbnail_url)
-            thumb_file = io.BytesIO(res.content)
+            thumb_file = res.content
         else:
             thumb_file = None
 
