@@ -167,9 +167,20 @@ class WZLSession(object):
     def create_submission(self, file_name, file_obj, title, type, category,
                           rating,
                           description, tags, folder_id=0, thumb_obj=None):
+        """Create a submission.
 
-        # TODO: not just "visual"
-        url = constants.WZL_ROOT + "/submit/visual"
+        Args:
+            file_name (str): The file name
+            file_obj: A file-like object containing the media to upload
+            title (str): The submission title
+            type (str): The submission type
+            category (int): A category code
+            rating (int): A rating code
+            description (str): A text description
+            tags: A list of tag names
+            folder_id (int, optional): The parent folder ID
+            thumb_obj: An optional thumbnail file-like object 
+        """
 
         if type == "visual":
             url = constants.WZL_ROOT + "/submit/visual"

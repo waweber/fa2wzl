@@ -228,6 +228,16 @@ def get_unmapped_submissions(fa_submissions, mapping):
 
 def associate_submissions_with_folders(fa_sess, unmapped_submissions,
                                        folder_mapping):
+    """Associate new submissions to folders on Weasyl.
+
+    Args:
+        fa_sess: The FA session
+        unmapped_submissions: List of submissions to create
+        folder_mapping: The mapping list of fa to weasyl folders
+
+    Yields:
+        Pairs of FA submissions and the Weasyl folders to add them to
+    """
     mapping_dict = {fa_folder: wzl_folder for fa_folder, wzl_folder in
                     folder_mapping}
 
