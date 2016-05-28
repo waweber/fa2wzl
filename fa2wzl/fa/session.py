@@ -94,7 +94,16 @@ class FASession(object):
         data = res.content
         return data
 
-    # @contextmanager
+    class _LoginContextManager(object):
+        def __init__(self, sess):
+            self.sess = sess
+
+        def __enter__(self):
+            pass
+
+        def __exit__(self, *args):
+            self.sess.logout()
+
     def login(self, password, captcha):
         """Log in to the site.
 
@@ -107,27 +116,23 @@ class FASession(object):
         Raises:
             AuthenticationError: If login fails
         """
-        try:
-            url = constants.FA_ROOT + "/login/"
-            data = {
-                "action": "login",
-                "name": self.username,
-                "pass": password,
-                "captcha": captcha,
-                "login": "Login to\u00a0FurAffinity",
-            }
+        url = constants.FA_ROOT + "/login/"
+        data = {
+            "action": "login",
+            "name": self.username,
+            "pass": password,
+            "captcha": captcha,
+            "login": "Login to\u00a0FurAffinity",
+        }
 
-            logger.info("Logging in as %s" % self.username)
-            self._limited_call(self._requests.post, url, data=data)
+        logger.info("Logging in as %s" % self.username)
+        self._limited_call(self._requests.post, url, data=data)
 
-            if "a" not in self._requests.cookies or \
-                            "b" not in self._requests.cookies:
-                raise exceptions.AuthenticationError()
+        if "a" not in self._requests.cookies or \
+                        "b" not in self._requests.cookies:
+            raise exceptions.AuthenticationError()
 
-                # yield
-        finally:
-            # self.logout()
-            pass
+        return self._LoginContextManager(self)
 
     def logout(self):
         """Log out of the site.
