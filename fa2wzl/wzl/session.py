@@ -1,3 +1,4 @@
+import json
 import re
 
 import requests
@@ -30,8 +31,11 @@ class WZLSession(object):
     @property
     def username(self):
         if self._username is None:
-            res = self._requests.get(constants.WZL_ROOT + "/api/whoami")
-            self._username = res.json()["login"]
+            try:
+                res = self._requests.get(constants.WZL_ROOT + "/api/whoami")
+                self._username = res.json()["login"]
+            except json.JSONDecodeError:
+                raise exceptions.AuthenticationError()
 
         return self._username
 

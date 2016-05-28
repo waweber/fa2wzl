@@ -94,7 +94,7 @@ class FASession(object):
         data = res.content
         return data
 
-    @contextmanager
+    # @contextmanager
     def login(self, password, captcha):
         """Log in to the site.
 
@@ -124,9 +124,10 @@ class FASession(object):
                             "b" not in self._requests.cookies:
                 raise exceptions.AuthenticationError()
 
-            yield
+                # yield
         finally:
-            self.logout()
+            # self.logout()
+            pass
 
     def logout(self):
         """Log out of the site.
