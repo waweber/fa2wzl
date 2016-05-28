@@ -40,6 +40,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.login_failed.connect(self._login_failed_handler)
         self.login_complete.connect(self._login_complete_handler)
         self.folders_loaded.connect(self._folders_loaded)
+        self.btnResetFolders.clicked.connect(self._login_complete_handler)
+
 
         self.fa_sess = FASession("")
 
@@ -133,9 +135,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.wzlFolders.clear()
 
         for item in fa_root_items:
+            item.setExpanded(True)
             self.faFolders.invisibleRootItem().addChild(item)
 
         for item in wzl_root_items:
+            item.setExpanded(True)
             self.wzlFolders.invisibleRootItem().addChild(item)
 
         self.fa_folder_items = fa_folder_items
@@ -144,6 +148,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.statusbar.clearMessage()
         self.btnCreateFolders.setEnabled(True)
         self.btnResetFolders.setEnabled(True)
+
+    def _folder_dropped(self, drop_event):
+        print(drop_event)
 
     def _login_failed_handler(self, mask):
         msg = ""

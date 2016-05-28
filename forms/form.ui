@@ -212,6 +212,21 @@
             <layout class="QVBoxLayout" name="verticalLayout_13">
              <item>
               <widget class="QTreeWidget" name="faFolders">
+               <property name="dragEnabled">
+                <bool>true</bool>
+               </property>
+               <property name="dragDropMode">
+                <enum>QAbstractItemView::DragOnly</enum>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="autoExpandDelay">
+                <number>-1</number>
+               </property>
+               <property name="itemsExpandable">
+                <bool>true</bool>
+               </property>
                <property name="columnCount">
                 <number>1</number>
                </property>
@@ -232,7 +247,25 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_14">
              <item>
-              <widget class="QTreeWidget" name="wzlFolders">
+              <widget class="CustomDropTreeWidget" name="wzlFolders">
+               <property name="dragEnabled">
+                <bool>true</bool>
+               </property>
+               <property name="dragDropMode">
+                <enum>QAbstractItemView::DragDrop</enum>
+               </property>
+               <property name="defaultDropAction">
+                <enum>Qt::IgnoreAction</enum>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::SingleSelection</enum>
+               </property>
+               <property name="autoExpandDelay">
+                <number>-1</number>
+               </property>
+               <property name="itemsExpandable">
+                <bool>true</bool>
+               </property>
                <column>
                 <property name="text">
                  <string notr="true">Folder Name</string>
@@ -537,6 +570,13 @@
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>CustomDropTreeWidget</class>
+   <extends>QTreeWidget</extends>
+   <header>fa2wzl.widget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>
