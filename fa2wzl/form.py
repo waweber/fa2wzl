@@ -122,6 +122,7 @@ class Ui_MainWindow(object):
         self.verticalLayout_14.setObjectName("verticalLayout_14")
         self.wzlFolders = FolderTree(self.groupBox_13)
         self.wzlFolders.setDragEnabled(True)
+        self.wzlFolders.setDragDropOverwriteMode(True)
         self.wzlFolders.setDragDropMode(QtWidgets.QAbstractItemView.DragDrop)
         self.wzlFolders.setDefaultDropAction(QtCore.Qt.IgnoreAction)
         self.wzlFolders.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
