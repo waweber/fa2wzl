@@ -29,6 +29,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.wzl_sess = None
 
         self.folder_mapping = {}
+        self.submission_mapping = {}
 
         # Signals/slots
         self.captcha_loaded.connect(self._set_captcha_img)
@@ -164,7 +165,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 mappings = []
 
                 for fa_folder, wzl_folder in self.folder_mapping.items():
-                    if wzl_folder == folder:
+                    if wzl_folder is folder:
                         mappings.append(fa_folder.title)
 
                 item.setText(0, "%s (%s)" % (folder.title, ", ".join(mappings)))
@@ -178,7 +179,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     mappings = []
 
                     for fa_folder, wzl_folder in self.folder_mapping.items():
-                        if wzl_folder == subfolder:
+                        if wzl_folder is subfolder:
                             mappings.append(fa_folder.title)
 
                     subitem.setText(0, "%s (%s)" % (
@@ -265,6 +266,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 mapping = compare.map_submissions(fa_gallery + fa_scraps,
                                                   wzl_gallery)
+                print("Mapping: %r" % mapping)
 
                 self.submission_mapping = {f: w for f, w in mapping}
 
@@ -284,6 +286,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         submission_items = {}
 
         with self.lock:
+
+            # Remap folders
+            folder_mapping = compare.map_folders(self.fa_sess.folders,
+                                                 self.wzl_sess.folders)
+            self.folder_mapping = {f: w for f, w in folder_mapping}
+
             # Create folders
             item = QtWidgets.QTreeWidgetItem()
             item.setData(0, QtCore.Qt.UserRole, None)
@@ -295,6 +303,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             item.setText(0, "Scraps")
             fa_scraps_folder = item
 
+            # FA Folders
             for folder in self.fa_sess.folders:
                 item = QtWidgets.QTreeWidgetItem()
                 item.setData(0, QtCore.Qt.UserRole, folder)
@@ -325,21 +334,127 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         item.setText(0, submission.title)
                         subfolder_item.addChild(item)
 
+            # FA gallery
             for submission in self.fa_sess.gallery:
                 item = QtWidgets.QTreeWidgetItem()
                 item.setData(0, QtCore.Qt.UserRole, submission)
                 item.setText(0, submission.title)
                 fa_gallery_folder.addChild(item)
 
+            # FA Scraps
             for submission in self.fa_sess.scraps:
                 item = QtWidgets.QTreeWidgetItem()
                 item.setData(0, QtCore.Qt.UserRole, submission)
                 item.setText(0, submission.title)
                 fa_scraps_folder.addChild(item)
 
+            wzl_subs_in_root = set(self.wzl_sess.gallery)
+
+            # WZL Folder
+            for folder in self.wzl_sess.folders:
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, folder)
+                item.setText(0, folder.title)
+                folder_items[folder] = item
+                wzl_items.append(item)
+
+                parent_item = item
+
+                for submission in folder.submissions:
+                    item = QtWidgets.QTreeWidgetItem()
+                    item.setData(0, QtCore.Qt.UserRole, submission)
+
+                    item.setText(0, submission.title)
+
+                    for f_s, w_s in self.submission_mapping.items():
+                        if w_s is submission:
+                            item.setText(0, "%s (%s)" % (
+                                submission.title, f_s.title))
+
+                    wzl_subs_in_root.remove(submission)
+
+                    parent_item.addChild(item)
+
+                for subfolder in folder.children:
+                    item = QtWidgets.QTreeWidgetItem()
+                    item.setData(0, QtCore.Qt.UserRole, subfolder)
+                    item.setText(0, subfolder.title)
+                    folder_items[subfolder] = item
+                    parent_item.addChild(item)
+
+                    subfolder_item = item
+
+                    for submission in subfolder.submissions:
+                        item = QtWidgets.QTreeWidgetItem()
+                        item.setData(0, QtCore.Qt.UserRole, submission)
+
+                        item.setText(0, submission.title)
+
+                        for f_s, w_s in self.submision_mapping.items():
+                            if w_s is submission:
+                                item.setText(0, "%s (%s)" % (
+                                    submission.title, f_s.title))
+
+                        wzl_subs_in_root.remove(submission)
+
+                        subfolder_item.addChild(item)
+
+            # WZL root
+            for submission in wzl_subs_in_root:
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, submission)
+
+                item.setText(0, submission.title)
+
+                for f_s, w_s in self.submission_mapping.items():
+                    if w_s is submission:
+                        item.setText(0, "%s (%s)" % (
+                            submission.title, f_s.title))
+
+                wzl_items.append(item)
+
+            # Now add unmapped submissions
+            unmapped_subs = compare.get_unmapped_submissions(
+                self.fa_sess.gallery + self.fa_sess.scraps,
+                [(f, w) for f, w in self.submission_mapping.items()])
+
+            wzl_subs_in_root.clear()
+            wzl_subs_in_root.update(unmapped_subs)
+
+            print("Unmapped: %r" % unmapped_subs)
+
+            assoc = compare.associate_submissions_with_folders(self.fa_sess,
+                                                               unmapped_subs,
+                                                               [(f, w) for f, w
+                                                                in
+                                                                self.folder_mapping.items()])
+
+            for submission, folder in assoc:
+                folder_item = folder_items[folder]
+
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, submission)
+                item.setText(0, submission.title + "*")
+                item.setForeground(0, QtGui.QColor(0, 150, 0))
+                folder_item.addChild(item)
+
+                wzl_subs_in_root.remove(submission)
+
+            for submission in wzl_subs_in_root:
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, submission)
+                item.setText(0, submission.title + "*")
+                item.setForeground(0, QtGui.QColor(0, 150, 0))
+
+                wzl_items.append(item)
+
         self.faSubmissions.clear()
         self.faSubmissions.invisibleRootItem().addChild(fa_gallery_folder)
         self.faSubmissions.invisibleRootItem().addChild(fa_scraps_folder)
+
+        self.wzlSubmissions.clear()
+        for item in wzl_items:
+            self.wzlSubmissions.invisibleRootItem().addChild(item)
 
     def __del__(self):
         self.fa_sess.logout()
