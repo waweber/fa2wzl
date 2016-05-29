@@ -1,7 +1,5 @@
-from PyQt5.QtWidgets import QTreeWidget
+from PyQt5 import QtCore, QtWidgets, QtGui
 
 
-class CustomDropTreeWidget(QTreeWidget):
-    def dropEvent(self, QDropEvent):
-        QDropEvent.ignore()
-        print("DROP")
+class FolderTree(QtWidgets.QTreeWidget):
+    pass
