@@ -16,6 +16,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     captcha_loaded = QtCore.pyqtSignal(bytes, name="captchaLoaded")
     login_complete = QtCore.pyqtSignal(bool, str, name="loginComplete")
     folders_loaded = QtCore.pyqtSignal(name="foldersLoaded")
+    folders_created = QtCore.pyqtSignal(name="foldersCreated")
+    submissions_loaded = QtCore.pyqtSignal(name="submissionsLoaded")
 
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -34,6 +36,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.login_complete.connect(self._login_complete)
         self.folders_loaded.connect(self._folders_loaded)
         self.wzlFolders.folder_dropped.connect(self._folder_dropped)
+        self.btnResetFolders.clicked.connect(self._reload_folders)
+        self.btnCreateFolders.clicked.connect(self._create_folders)
+        self.folders_created.connect(self._folders_created)
+        self.submissions_loaded.connect(self._submissions_loaded)
 
         self._load_captcha()
 
@@ -124,6 +130,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _folders_loaded(self):
         self.statusbar.clearMessage()
         self._render_folders()
+        self.btnCreateFolders.setEnabled(True)
+        self.btnResetFolders.setEnabled(True)
+
+    def _reload_folders(self):
+        self.btnCreateFolders.setEnabled(False)
+        self.btnResetFolders.setEnabled(False)
+        self._load_folders()
 
     def _render_folders(self):
 
@@ -217,6 +230,116 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.folder_mapping[src_folder] = wzl_folder
 
         self._render_folders()
+
+    def _create_folders(self):
+        def work():
+            with self.lock:
+                mapping = [(fa_folder, wzl_folder) for fa_folder, wzl_folder in
+                           self.folder_mapping.items()]
+
+                compare.create_unmapped_folders(
+                    self.fa_sess,
+                    self.wzl_sess,
+                    mapping,
+                )
+
+            self.folders_created.emit()
+
+        self.btnResetFolders.setEnabled(False)
+        self.btnCreateFolders.setEnabled(False)
+
+        self.statusbar.showMessage("Creating folders")
+        threading.Thread(target=work).start()
+
+    def _folders_created(self):
+        self.statusbar.clearMessage()
+        self.stackedWidget.setCurrentIndex(2)
+        self._load_submissions()
+
+    def _load_submissions(self):
+        def work():
+            with self.lock:
+                fa_gallery = self.fa_sess.gallery
+                fa_scraps = self.fa_sess.scraps
+                wzl_gallery = self.wzl_sess.gallery
+
+                mapping = compare.map_submissions(fa_gallery + fa_scraps,
+                                                  wzl_gallery)
+
+                self.submission_mapping = {f: w for f, w in mapping}
+
+            self.submissions_loaded.emit()
+
+        self.statusbar.showMessage("Loading submissions")
+        threading.Thread(target=work).start()
+
+    def _submissions_loaded(self):
+        self.statusbar.clearMessage()
+        self._render_submissions()
+
+    def _render_submissions(self):
+        wzl_items = []
+
+        folder_items = {}
+        submission_items = {}
+
+        with self.lock:
+            # Create folders
+            item = QtWidgets.QTreeWidgetItem()
+            item.setData(0, QtCore.Qt.UserRole, None)
+            item.setText(0, "Gallery")
+            fa_gallery_folder = item
+
+            item = QtWidgets.QTreeWidgetItem()
+            item.setData(0, QtCore.Qt.UserRole, None)
+            item.setText(0, "Scraps")
+            fa_scraps_folder = item
+
+            for folder in self.fa_sess.folders:
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, folder)
+                item.setText(0, folder.title)
+                folder_items[folder] = item
+                fa_gallery_folder.addChild(item)
+
+                parent_item = item
+
+                for submission in folder.submissions:
+                    item = QtWidgets.QTreeWidgetItem()
+                    item.setData(0, QtCore.Qt.UserRole, submission)
+                    item.setText(0, submission.title)
+                    parent_item.addChild(item)
+
+                for subfolder in folder.children:
+                    item = QtWidgets.QTreeWidgetItem()
+                    item.setData(0, QtCore.Qt.UserRole, subfolder)
+                    item.setText(0, subfolder.title)
+                    folder_items[subfolder] = item
+                    parent_item.addChild(item)
+
+                    subfolder_item = item
+
+                    for submission in subfolder.submissions:
+                        item = QtWidgets.QTreeWidgetItem()
+                        item.setData(0, QtCore.Qt.UserRole, submission)
+                        item.setText(0, submission.title)
+                        subfolder_item.addChild(item)
+
+            for submission in self.fa_sess.gallery:
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, submission)
+                item.setText(0, submission.title)
+                fa_gallery_folder.addChild(item)
+
+            for submission in self.fa_sess.scraps:
+                item = QtWidgets.QTreeWidgetItem()
+                item.setData(0, QtCore.Qt.UserRole, submission)
+                item.setText(0, submission.title)
+                fa_scraps_folder.addChild(item)
+
+        self.faSubmissions.clear()
+        self.faSubmissions.invisibleRootItem().addChild(fa_gallery_folder)
+        self.faSubmissions.invisibleRootItem().addChild(fa_scraps_folder)
 
     def __del__(self):
         self.fa_sess.logout()
