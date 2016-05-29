@@ -30,6 +30,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # Session stuff
         self.lock = threading.Lock()
+        self.thread = None
+        self.run = True
         self.fa_sess = FASession("")
         self.wzl_sess = None
 
@@ -611,9 +613,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         self.log_event.emit(
                             "Waiting %d minutes" % interval_minutes)
                         for i in range(60 * interval_minutes):
+                            if not self.run:
+                                return
                             time.sleep(1)
                             self.progress.emit(uploaded, len(to_create), i + 1,
                                                60 * interval_minutes)
+
+                    if not self.run:
+                        return
 
                     self.log_event.emit("Uploading \"%s\"" % sub.title)
                     self._upload_one_submission(sub)
@@ -622,7 +629,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 self.log_event.emit("Finished")
 
-        threading.Thread(target=work).start()
+        self.thread = threading.Thread(target=work)
+        self.thread.start()
 
     def _upload_one_submission(self, sub):
         # Download the file
@@ -682,6 +690,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _log(self, msg):
         self.log.setText(self.log.toPlainText() + msg + "\r\n")
+
+    def closeEvent(self, QCloseEvent):
+        super().closeEvent(QCloseEvent)
+
+        self.run = False
+
+        if self.thread is not None:
+            self.thread.join()
 
     def __del__(self):
         self.fa_sess.logout()
