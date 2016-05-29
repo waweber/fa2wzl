@@ -41,6 +41,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btnCreateFolders.clicked.connect(self._create_folders)
         self.folders_created.connect(self._folders_created)
         self.submissions_loaded.connect(self._submissions_loaded)
+        self.wzlSubmissions.submissions_dropped.connect(self._submission_move)
 
         self._load_captcha()
 
@@ -266,7 +267,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 mapping = compare.map_submissions(fa_gallery + fa_scraps,
                                                   wzl_gallery)
-                print("Mapping: %r" % mapping)
 
                 self.submission_mapping = {f: w for f, w in mapping}
 
@@ -355,6 +355,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 item = QtWidgets.QTreeWidgetItem()
                 item.setData(0, QtCore.Qt.UserRole, folder)
                 item.setText(0, folder.title)
+                item.setFlags(
+                    item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
                 folder_items[folder] = item
                 wzl_items.append(item)
 
@@ -379,6 +381,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     item = QtWidgets.QTreeWidgetItem()
                     item.setData(0, QtCore.Qt.UserRole, subfolder)
                     item.setText(0, subfolder.title)
+                    item.setFlags(
+                        item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
                     folder_items[subfolder] = item
                     parent_item.addChild(item)
 
@@ -421,8 +425,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             wzl_subs_in_root.clear()
             wzl_subs_in_root.update(unmapped_subs)
 
-            print("Unmapped: %r" % unmapped_subs)
-
             assoc = compare.associate_submissions_with_folders(self.fa_sess,
                                                                unmapped_subs,
                                                                [(f, w) for f, w
@@ -455,6 +457,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.wzlSubmissions.clear()
         for item in wzl_items:
             self.wzlSubmissions.invisibleRootItem().addChild(item)
+
+    def _submission_move(self, id_list, target_folder):
+        print(id_list, target_folder)
 
     def __del__(self):
         self.fa_sess.logout()

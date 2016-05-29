@@ -213,7 +213,7 @@
              <item>
               <widget class="QTreeWidget" name="faFolders">
                <property name="dragEnabled">
-                <bool>true</bool>
+                <bool>false</bool>
                </property>
                <property name="dragDropMode">
                 <enum>QAbstractItemView::DragOnly</enum>
@@ -351,7 +351,7 @@
               <widget class="QTreeWidget" name="faSubmissions">
                <column>
                 <property name="text">
-                 <string notr="true">1</string>
+                 <string notr="true">Submission Title</string>
                 </property>
                </column>
               </widget>
@@ -366,10 +366,19 @@
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_17">
              <item>
-              <widget class="QTreeWidget" name="wzlSubmissions">
+              <widget class="SubmissionTree" name="wzlSubmissions">
+               <property name="dragEnabled">
+                <bool>true</bool>
+               </property>
+               <property name="dragDropMode">
+                <enum>QAbstractItemView::InternalMove</enum>
+               </property>
+               <property name="selectionMode">
+                <enum>QAbstractItemView::MultiSelection</enum>
+               </property>
                <column>
                 <property name="text">
-                 <string notr="true">1</string>
+                 <string notr="true">Submission Title</string>
                 </property>
                </column>
               </widget>
@@ -547,6 +556,11 @@
  <customwidgets>
   <customwidget>
    <class>FolderTree</class>
+   <extends>QTreeWidget</extends>
+   <header>fa2wzl.widget</header>
+  </customwidget>
+  <customwidget>
+   <class>SubmissionTree</class>
    <extends>QTreeWidget</extends>
    <header>fa2wzl.widget</header>
   </customwidget>
