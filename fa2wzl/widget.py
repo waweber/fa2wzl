@@ -48,7 +48,7 @@ class FolderTree(QtWidgets.QTreeWidget):
 
 
 class SubmissionTree(QtWidgets.QTreeWidget):
-    submissions_dropped = QtCore.pyqtSignal(list, WZLFolder,
+    submissions_dropped = QtCore.pyqtSignal(list, list,
                                             name="submissionsDropped")
 
     def mimeTypes(self):
@@ -74,13 +74,14 @@ class SubmissionTree(QtWidgets.QTreeWidget):
 
         data = json.loads(text)
 
+
         if parent_item is None:
-            return False
+            folder = None
+        else:
+            folder = parent_item.data(0, QtCore.Qt.UserRole)
+            if not isinstance(folder, WZLFolder):
+                return False
 
-        folder = parent_item.data(0, QtCore.Qt.UserRole)
-        if not isinstance(folder, WZLFolder):
-            return False
-
-        self.submissions_dropped.emit(data, folder)
+        self.submissions_dropped.emit(data, [folder])
 
         return True

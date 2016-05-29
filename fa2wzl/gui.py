@@ -19,6 +19,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     folders_created = QtCore.pyqtSignal(name="foldersCreated")
     submissions_loaded = QtCore.pyqtSignal(name="submissionsLoaded")
 
+    set_preview = QtCore.pyqtSignal(bytes, name="setPreview")
+
+    progress = QtCore.pyqtSignal(int, int, int, int, name="progress")
+    log_event = QtCore.pyqtSignal(str, name="logEvent")
+
     def __init__(self):
         super(MainWindow, self).__init__()
         self.setupUi(self)
@@ -30,6 +35,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         self.folder_mapping = {}
         self.submission_mapping = {}
+        self.submission_folders = {}
+        self.excluded_submissions = []
 
         # Signals/slots
         self.captcha_loaded.connect(self._set_captcha_img)
@@ -42,6 +49,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.folders_created.connect(self._folders_created)
         self.submissions_loaded.connect(self._submissions_loaded)
         self.wzlSubmissions.submissions_dropped.connect(self._submission_move)
+        self.wzlSubmissions.customContextMenuRequested.connect(
+            self._submission_context_menu)
+        self.wzlSubmissions.selectionModel().selectionChanged.connect(
+            self._get_preview)
+        self.set_preview.connect(self._set_preview)
+        self.btnResetSubmissions.clicked.connect(self._reset_submissions)
+        self.btnCreateSubmissions.clicked.connect(self._upload)
+        self.progress.connect(self._progress)
+        self.log_event.connect(self._log)
 
         self._load_captcha()
 
@@ -227,6 +243,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for item in wzl_items:
             self.wzlFolders.invisibleRootItem().addChild(item)
 
+        self.faFolders.expandAll()
+        self.wzlFolders.expandAll()
+        self.wzlFolders.resizeColumnToContents(0)
+        self.wzlFolders.resizeColumnToContents(1)
+
     def _folder_dropped(self, src_id, wzl_folder):
         folders = {}
 
@@ -285,8 +306,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         threading.Thread(target=work).start()
 
     def _submissions_loaded(self):
+        with self.lock:
+            # Remap folders
+            folder_mapping = compare.map_folders(self.fa_sess.folders,
+                                                 self.wzl_sess.folders)
+            self.folder_mapping = {f: w for f, w in folder_mapping}
+
+            unmapped_subs = compare.get_unmapped_submissions(
+                self.fa_sess.gallery + self.fa_sess.scraps,
+                [(f, w) for f, w in self.submission_mapping.items()])
+
+            assoc = compare.associate_submissions_with_folders(
+                self.fa_sess, unmapped_subs,
+                [(f, w) for f, w in self.folder_mapping.items()])
+
+            self.submission_folders = {s: f for s, f in assoc}
+
         self.statusbar.clearMessage()
         self._render_submissions()
+        self.btnResetSubmissions.setEnabled(True)
+        self.btnCreateSubmissions.setEnabled(True)
 
     def _render_submissions(self):
         wzl_items = []
@@ -294,12 +333,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         folder_items = {}
 
         with self.lock:
-
-            # Remap folders
-            folder_mapping = compare.map_folders(self.fa_sess.folders,
-                                                 self.wzl_sess.folders)
-            self.folder_mapping = {f: w for f, w in folder_mapping}
-
             # Create folders
             item = QtWidgets.QTreeWidgetItem()
             item.setData(0, QtCore.Qt.UserRole, None)
@@ -432,20 +465,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 wzl_items.append(item)
 
             # Now add unmapped submissions
+
             unmapped_subs = compare.get_unmapped_submissions(
                 self.fa_sess.gallery + self.fa_sess.scraps,
                 [(f, w) for f, w in self.submission_mapping.items()])
 
-            wzl_subs_in_root.clear()
-            wzl_subs_in_root.update(unmapped_subs)
+            wzl_subs_in_root = set(unmapped_subs)
 
-            assoc = compare.associate_submissions_with_folders(self.fa_sess,
-                                                               unmapped_subs,
-                                                               [(f, w) for f, w
-                                                                in
-                                                                self.folder_mapping.items()])
+            for submission, folder in self.submission_folders.items():
+                if submission.id in self.excluded_submissions:
+                    continue
 
-            for submission, folder in assoc:
                 folder_item = folder_items[folder]
 
                 item = QtWidgets.QTreeWidgetItem()
@@ -457,6 +487,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 wzl_subs_in_root.remove(submission)
 
             for submission in wzl_subs_in_root:
+                if submission.id in self.excluded_submissions:
+                    continue
+
                 item = QtWidgets.QTreeWidgetItem()
                 item.setData(0, QtCore.Qt.UserRole, submission)
                 item.setText(0, submission.title + "*")
@@ -472,8 +505,183 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         for item in wzl_items:
             self.wzlSubmissions.invisibleRootItem().addChild(item)
 
+        self.faSubmissions.expandAll()
+        self.wzlSubmissions.expandAll()
+        self.wzlSubmissions.resizeColumnToContents(0)
+        self.wzlSubmissions.resizeColumnToContents(1)
+
     def _submission_move(self, id_list, target_folder):
-        print(id_list, target_folder)
+
+        target_folder = target_folder[0]  # hacky
+
+        with self.lock:
+            subs = {}
+
+            for sub in self.fa_sess.gallery + self.fa_sess.scraps:
+                subs[sub.id] = sub
+
+            for id_ in id_list:
+                sub = subs[id_]
+
+                if target_folder is None:
+                    if sub in self.submission_folders:
+                        del self.submission_folders[sub]
+                else:
+                    self.submission_folders[sub] = target_folder
+
+        self._render_submissions()
+
+    def _submission_context_menu(self, point):
+
+        if len(self.wzlSubmissions.selectedItems()) == 0:
+            return
+
+        ctx = QtWidgets.QMenu()
+        act = QtWidgets.QAction("Delete", self)
+
+        def handler(b):
+            exclude = []
+            for item in self.wzlSubmissions.selectedItems():
+                sub = item.data(0, QtCore.Qt.UserRole)
+                exclude.append(sub.id)
+
+            with self.lock:
+                self.excluded_submissions.extend(exclude)
+
+            self._render_submissions()
+
+        act.triggered.connect(handler)
+
+        ctx.addAction(act)
+
+        ctx.exec(self.wzlSubmissions.mapToGlobal(point))
+
+    def _reset_submissions(self):
+        self.btnResetSubmissions.setEnabled(False)
+        self.btnCreateSubmissions.setEnabled(False)
+        self.excluded_submissions = []
+        self._load_submissions()
+
+    def _get_preview(self, old, new):
+        if len(self.wzlSubmissions.selectedItems()) != 1:
+            self.submissionPreview.setPixmap(QtGui.QPixmap())
+            return
+
+        sub = self.wzlSubmissions.selectedItems()[0].data(0, QtCore.Qt.UserRole)
+
+        def work():
+            with self.lock:
+                # TODO: do not use protected attribute
+                # TODO: cache the thumbnail instead of repeatedly requesting it
+                res = self.wzl_sess._requests.get(sub.thumbnail_url)
+                data = res.content
+
+            self.set_preview.emit(data)
+
+        threading.Thread(target=work).start()
+
+    def _set_preview(self, data):
+        pixmap = QtGui.QPixmap()
+        pixmap.loadFromData(QtCore.QByteArray(data))
+        self.submissionPreview.setPixmap(pixmap)
+
+    def _upload(self):
+        self.overallProgress.setValue(0)
+        self.waitProgress.setValue(0)
+        self.stackedWidget.setCurrentIndex(3)
+
+        interval_minutes = self.btnDelay.value()
+
+        def work():
+
+            with self.lock:
+                unmapped = compare.get_unmapped_submissions(
+                    self.fa_sess.gallery + self.fa_sess.scraps,
+                    [(f, w) for f, w in self.submission_mapping.items()])
+
+                to_create = [sub for sub in unmapped if
+                             sub not in self.excluded_submissions]
+
+                to_create.sort(key=lambda x: x.id)
+
+                uploaded = 0
+
+                for sub in to_create:
+                    if sub is not to_create[0]:
+                        self.log_event.emit(
+                            "Waiting %d minutes" % interval_minutes)
+                        for i in range(60 * interval_minutes):
+                            time.sleep(1)
+                            self.progress.emit(uploaded, len(to_create), i + 1,
+                                               60 * interval_minutes)
+
+                    self.log_event.emit("Uploading \"%s\"" % sub.title)
+                    self._upload_one_submission(sub)
+                    uploaded += 1
+                    self.progress.emit(uploaded, len(to_create), 0, 1)
+
+                self.log_event.emit("Finished")
+
+        threading.Thread(target=work).start()
+
+    def _upload_one_submission(self, sub):
+        # Download the file
+        # TODO: use a non protected attribute
+        res = self.fa_sess._requests.get(sub.media_url)
+        file = res.content
+
+        # TODO: not exactly the right way
+        file_name_info = sub.media_url.split("/")
+
+        file_name = file_name_info[-1]
+
+        title = sub.title
+        type = compare.convert_submission_type(sub.type)
+
+        try:
+            category = compare.convert_submission_category(sub.category)
+        except KeyError:
+            category = ""
+
+        rating = compare.convert_rating(sub.rating)
+        description = sub.description
+        tags = sub.tags
+
+        if sub in self.submission_folders:
+            folder_id = self.submission_folders[sub].id
+        else:
+            folder_id = 0
+
+        if type != "visual":
+            # Use custom thumbnail
+            res = self.fa_sess._requests.get(sub.thumbnail_url)
+            thumb_file = res.content
+        else:
+            thumb_file = None
+
+        # Upload the submission
+
+        self.wzl_sess.create_submission(
+            file_name,
+            file,
+            title,
+            type,
+            category,
+            rating,
+            description,
+            tags,
+            folder_id,
+            thumb_file,
+        )
+
+    def _progress(self, overall_num, overall_max, time_num, time_max):
+        self.overallProgress.setMaximum(overall_max)
+        self.overallProgress.setValue(overall_num)
+        self.waitProgress.setValue(time_max)
+        self.waitProgress.setValue(time_num)
+
+    def _log(self, msg):
+        self.log.setText(self.log.toPlainText() + msg + "\r\n")
 
     def __del__(self):
         self.fa_sess.logout()
