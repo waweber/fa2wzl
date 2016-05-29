@@ -274,6 +274,11 @@
                  <string notr="true">Folder Name</string>
                 </property>
                </column>
+               <column>
+                <property name="text">
+                 <string>FA Folders</string>
+                </property>
+               </column>
               </widget>
              </item>
             </layout>
@@ -371,14 +376,19 @@
                 <bool>true</bool>
                </property>
                <property name="dragDropMode">
-                <enum>QAbstractItemView::InternalMove</enum>
+                <enum>QAbstractItemView::DragDrop</enum>
                </property>
                <property name="selectionMode">
-                <enum>QAbstractItemView::MultiSelection</enum>
+                <enum>QAbstractItemView::ExtendedSelection</enum>
                </property>
                <column>
                 <property name="text">
                  <string notr="true">Submission Title</string>
+                </property>
+               </column>
+               <column>
+                <property name="text">
+                 <string>FA Submission</string>
                 </property>
                </column>
               </widget>

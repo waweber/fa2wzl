@@ -39,6 +39,9 @@ class FolderTree(QtWidgets.QTreeWidget):
 
         data = json.loads(text)
 
+        if len(data) != 1:
+            return False
+
         self.folder_dropped.emit(data[0], folder)
 
         return True
@@ -70,6 +73,9 @@ class SubmissionTree(QtWidgets.QTreeWidget):
             "utf-8")
 
         data = json.loads(text)
+
+        if parent_item is None:
+            return False
 
         folder = parent_item.data(0, QtCore.Qt.UserRole)
         if not isinstance(folder, WZLFolder):

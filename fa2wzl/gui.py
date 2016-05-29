@@ -152,12 +152,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 item = QtWidgets.QTreeWidgetItem()
                 item.setData(0, QtCore.Qt.UserRole, folder)
                 item.setText(0, folder.title)
+                item.setFlags(
+                    item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
                 fa_items.append(item)
 
                 for subfolder in folder.children:
                     subitem = QtWidgets.QTreeWidgetItem()
                     subitem.setData(0, QtCore.Qt.UserRole, subfolder)
                     subitem.setText(0, subfolder.title)
+                    subitem.setFlags(
+                        item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
                     item.addChild(subitem)
 
             for folder in self.wzl_sess.folders:
@@ -169,7 +173,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     if wzl_folder is folder:
                         mappings.append(fa_folder.title)
 
-                item.setText(0, "%s (%s)" % (folder.title, ", ".join(mappings)))
+                item.setText(0, folder.title)
+                item.setText(1, ", ".join(mappings))
+                item.setFlags(
+                    item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
                 folder_item_mapping[folder] = item
                 wzl_items.append(item)
 
@@ -183,8 +190,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                         if wzl_folder is subfolder:
                             mappings.append(fa_folder.title)
 
-                    subitem.setText(0, "%s (%s)" % (
-                        subfolder.title, ", ".join(mappings)))
+                    subitem.setText(0, subfolder.title)
+                    subitem.setText(1, ", ".join(mappings))
+                    subitem.setFlags(
+                        item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
 
                     item.addChild(subitem)
 
@@ -283,7 +292,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         wzl_items = []
 
         folder_items = {}
-        submission_items = {}
 
         with self.lock:
 
@@ -370,8 +378,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                     for f_s, w_s in self.submission_mapping.items():
                         if w_s is submission:
-                            item.setText(0, "%s (%s)" % (
-                                submission.title, f_s.title))
+                            item.setText(1, f_s.title)
+
+                    item.setFlags(
+                        item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
 
                     wzl_subs_in_root.remove(submission)
 
@@ -396,8 +406,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                         for f_s, w_s in self.submision_mapping.items():
                             if w_s is submission:
-                                item.setText(0, "%s (%s)" % (
-                                    submission.title, f_s.title))
+                                item.setText(1, f_s.title)
+
+                        item.setFlags(
+                            item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
 
                         wzl_subs_in_root.remove(submission)
 
@@ -412,8 +424,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
                 for f_s, w_s in self.submission_mapping.items():
                     if w_s is submission:
-                        item.setText(0, "%s (%s)" % (
-                            submission.title, f_s.title))
+                        item.setText(1, f_s.title)
+
+                item.setFlags(
+                    item.flags() & ~ QtCore.Qt.ItemIsSelectable & ~ QtCore.Qt.ItemIsDragEnabled)
 
                 wzl_items.append(item)
 
